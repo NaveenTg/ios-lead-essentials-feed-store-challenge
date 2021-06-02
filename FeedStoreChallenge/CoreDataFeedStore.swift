@@ -32,9 +32,7 @@ public final class CoreDataFeedStore: FeedStore {
 		let context = self.context
 		context.perform {
 			do {
-				let request = NSFetchRequest<ManagedCache>(entityName: ManagedCache.entity().name!)
-				request.returnsObjectsAsFaults = false
-				if let cache = try context.fetch(request).first {
+				if let cache = try ManagedCache.fetch(in: context) {
 					let feed = cache.feed
 						.compactMap { $0 as? ManagedFeedImage }
 						.map { LocalFeedImage(id: $0.id,
@@ -54,17 +52,18 @@ public final class CoreDataFeedStore: FeedStore {
 	public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
 		let context = self.context
 		context.perform {
-			let newCache = ManagedCache(context: context)
-			newCache.feed = NSOrderedSet(array: feed.map { feed in
-				let managed = ManagedFeedImage(context: context)
-				managed.id = feed.id
-				managed.imageDescription = feed.description
-				managed.location = feed.location
-				managed.url = feed.url
-				return managed
-			})
-			newCache.timestamp = timestamp
 			do {
+				try ManagedCache.fetch(in: context).map(context.delete)
+				let newCache = ManagedCache(context: context)
+				newCache.feed = NSOrderedSet(array: feed.map { feed in
+					let managed = ManagedFeedImage(context: context)
+					managed.id = feed.id
+					managed.imageDescription = feed.description
+					managed.location = feed.location
+					managed.url = feed.url
+					return managed
+				})
+				newCache.timestamp = timestamp
 				try context.save()
 				completion(nil)
 			} catch {
