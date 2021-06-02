@@ -35,10 +35,7 @@ public final class CoreDataFeedStore: FeedStore {
 				if let cache = try ManagedCache.fetch(in: context) {
 					let feed = cache.feed
 						.compactMap { $0 as? ManagedFeedImage }
-						.map { LocalFeedImage(id: $0.id,
-						                      description: $0.imageDescription,
-						                      location: $0.location,
-						                      url: $0.url) }
+						.map { $0.local }
 					completion(.found(feed: feed, timestamp: cache.timestamp))
 				} else {
 					completion(.empty)
@@ -53,8 +50,7 @@ public final class CoreDataFeedStore: FeedStore {
 		let context = self.context
 		context.perform {
 			do {
-				try ManagedCache.fetch(in: context).map(context.delete)
-				let newCache = ManagedCache(context: context)
+				let newCache = try ManagedCache.newInstance(in: context)
 				newCache.feed = NSOrderedSet(array: feed.map { feed in
 					let managed = ManagedFeedImage(context: context)
 					managed.id = feed.id
