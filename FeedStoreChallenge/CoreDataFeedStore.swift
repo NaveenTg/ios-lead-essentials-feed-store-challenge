@@ -60,8 +60,7 @@ public final class CoreDataFeedStore: FeedStore {
 	public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
 		performContext { context in
 			do {
-				try ManagedCache.fetch(in: context).map(context.delete)
-				try context.save()
+				try ManagedCache.fetch(in: context).map(context.delete).map(context.save)
 				completion(nil)
 			} catch {
 				context.rollback()
@@ -71,6 +70,6 @@ public final class CoreDataFeedStore: FeedStore {
 	}
 
 	private func performContext(_ action: @escaping (NSManagedObjectContext) -> Void) {
-		context.perform { [self] in action(context) }
+		context.perform { [context] in action(context) }
 	}
 }
